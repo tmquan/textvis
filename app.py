@@ -1,18 +1,22 @@
 import lightning as L
 import gradio as gr
+import pandas as pd
 import numpy as np
-# import os
-# os.system('python -m spacy download en_core_web_sm')
-
+import html
+import random
 import json
+import stanza
+
 import logging
 logging.basicConfig(level=logging.INFO)
 
 from functools import partial
 from lightning.app.components.serve import ServeGradio
 
-import spacy
-from spacy import displacy
+
+# Prevent special characters like & and < to cause the browser to display something other than what you intended.
+def html_escape(text):
+    return html.escape(text)
 
 class TextVisualizationServeGradio(ServeGradio):
     inputs = []
@@ -26,18 +30,8 @@ class TextVisualizationServeGradio(ServeGradio):
     )
     outputs = []
     outputs.append(
-        gr.HighlightedText(
-            elem_id="htext",
-            label=f"Highlight",
-            show_legend=True,
-            combine_adjacent=True, 
-            adjacent_separator="",
-        ), #.style(color_map={"Harry": "green", "James Potter": "red"}, container=True),
+        gr.HTML()
     )
-    outputs.append(
-        gr.JSON(),
-    )
-
     with open("data/Harry_Potter_Corpora/HarryJamesPotter.txt", "r", encoding="utf8") as f:
         HarryJamesPotter = f.read()
 
@@ -77,14 +71,60 @@ class TextVisualizationServeGradio(ServeGradio):
         pass
 
     def predict(self, texts):
-        nlp = spacy.load("en_core_web_sm")
-        doc = nlp(texts)  # doc is class Document
-        pos_tokens = []
+        return texts
+        # nlp = stanza.Pipeline(lang='en', processors='tokenize')
+        # doc = nlp(texts)
+        # sentences = doc.sentences
+        # words = [
+        #     token.text for sentence in doc.sentences for token in sentence.tokens
+        # ]
+        # # for i, sentence in enumerate(doc.sentences):
+        # #     print(f'====== Sentence {i+1} tokens =======')
+        # #     print(*[f'id: {token.id}\ttext: {token.text}' for token in sentence.tokens], sep='\n')
 
-        for token in doc:
-            pos_tokens.extend([(token.text, token.pos_)])
-        return pos_tokens, json.dumps(pos_tokens)
+        # # Remove duplicate words from text
+        # seen = set()
+        # result = []
+        # for item in words:
+        #     if item not in seen:
+        #         seen.add(item)
+        #         result.append(item)
 
+
+        # # Create random sample weights for each unique word
+        # weights = []
+        # for i in range(len(result)):
+        #     weights.append(random.random())
+        
+        # df_coeff = pd.DataFrame({
+        #     'word': result,
+        #     'num_code': weights
+        # })
+
+
+        # # Select the code value to generate different weights
+        # word_to_coeff_mapping = {}
+        # for row in df_coeff.iterrows():
+        #     row = row[1]
+        #     word_to_coeff_mapping[row[1]] = (row[0])
+
+        # max_alpha = 0.8
+        # highlighted_text = []
+        # for word in words:
+        #     weight = word_to_coeff_mapping.get(word)
+
+        #     if weight is not None:
+        #         highlighted_text.append(
+        #             '<span style="background-color:rgba(135,206,250,' \
+        #             + str(weight / max_alpha) + ');">' \
+        #             + html_escape(word) \
+        #             + '</span>'
+        #         )
+        #     else:
+        #         highlighted_text.append(word)
+        # highlighted_text = ' '.join(highlighted_text)
+        # return highlighted_text
+    
 class LitRootFlow(L.LightningFlow):
     def __init__(self):
         super().__init__()
