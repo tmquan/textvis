@@ -1,40 +1,41 @@
 import lightning as L
 import gradio as gr
 import numpy as np
+# import os
+# os.system('python -m spacy download en_core_web_sm')
+
+import json
+import logging
+logging.basicConfig(level=logging.INFO)
 
 from functools import partial
 from lightning.app.components.serve import ServeGradio
 
-import flash
-from flash.text import TextClassificationData, TextEmbedder
-import logging
-logging.basicConfig(level=logging.INFO)
-
+import spacy
+from spacy import displacy
 
 class TextVisualizationServeGradio(ServeGradio):
     inputs = []
     inputs.append(
         gr.Textbox(
-            lines=20, 
-            elem_id="itext",
+            elem_id=f"itext",
+            lines=15,
             label=f"Context",
-            placeholder="Type a sentence or paragraph here."
+            placeholder=f"Type a sentence or paragraph here."
         )
     )
     outputs = []
     outputs.append(
-        # gr.HighlightedText(
-        #     # value=[("Harry", "first_name"), ("James Potter", "last_name")],
-        #     value=[("Harry", ""), ("James Potter", "")],
-        #     elem_id="htext",
-        #     label=f"Highlight",
-        # ),
-        gr.Textbox(
-            lines=20, 
-            elem_id="otext",
-            label=f"Context", 
-            placeholder="Result is displayed here."
-        )
+        gr.HighlightedText(
+            elem_id="htext",
+            label=f"Highlight",
+            show_legend=True,
+            combine_adjacent=True, 
+            adjacent_separator="",
+        ), #.style(color_map={"Harry": "green", "James Potter": "red"}, container=True),
+    )
+    outputs.append(
+        gr.JSON(),
     )
 
     with open("data/Harry_Potter_Corpora/HarryJamesPotter.txt", "r", encoding="utf8") as f:
@@ -72,11 +73,17 @@ class TextVisualizationServeGradio(ServeGradio):
         )
 
     def build_model(self):
+        self.ready = True
         pass
 
     def predict(self, texts):
-        return texts
+        nlp = spacy.load("en_core_web_sm")
+        doc = nlp(texts)  # doc is class Document
+        pos_tokens = []
 
+        for token in doc:
+            pos_tokens.extend([(token.text, token.pos_)])
+        return pos_tokens, json.dumps(pos_tokens)
 
 class LitRootFlow(L.LightningFlow):
     def __init__(self):
@@ -86,7 +93,7 @@ class LitRootFlow(L.LightningFlow):
 
     def configure_layout(self):
         tabs = []
-        tabs.append({"name": "Text Visualization", "content": self.textvis})
+        tabs.append({"name": "Text_Analytics", "content": self.textvis})
         return tabs
 
     def run(self):
