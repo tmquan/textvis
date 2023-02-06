@@ -13,16 +13,11 @@ logging.basicConfig(level=logging.INFO)
 from functools import partial
 from lightning.app.components.serve import ServeGradio
 
-
-# Prevent special characters like & and < to cause the browser to display something other than what you intended.
-def html_escape(text):
-    return html.escape(text)
-
 class TextVisualizationServeGradio(ServeGradio):
     inputs = []
     inputs.append(
         gr.Textbox(
-            elem_id=f"itext",
+            elem_id="itext",
             lines=15,
             label=f"Context",
             placeholder=f"Type a sentence or paragraph here."
@@ -30,7 +25,16 @@ class TextVisualizationServeGradio(ServeGradio):
     )
     outputs = []
     outputs.append(
-        gr.HTML()
+        # gr.Textbox(
+        #     elem_id="otext",
+        #     lines=15,
+        #     label=f"Highlight",
+        #     placeholder=f"Result is displayed here"
+        # )
+        gr.Markdown(
+            elem_id="otext",
+            label=f"Highlight",
+        )
     )
     with open("data/Harry_Potter_Corpora/HarryJamesPotter.txt", "r", encoding="utf8") as f:
         HarryJamesPotter = f.read()
@@ -54,7 +58,8 @@ class TextVisualizationServeGradio(ServeGradio):
         gr.Interface(
             fn=fn,
             # Override here
-            css="#htext span {white-space: pre-wrap; word-wrap: normal}",
+            css="#itext textarea {text-align: justify} #otext {text-align: justify}",
+            # css="#itext span {white-space: pre-wrap; word-wrap: normal}; #otext div {white-space: pre-line;}",
             # css="p {text-align: justify;}",
             inputs=self.inputs,
             outputs=self.outputs,
@@ -71,7 +76,8 @@ class TextVisualizationServeGradio(ServeGradio):
         pass
 
     def predict(self, texts):
-        return texts
+        return html.escape(texts)
+
         # nlp = stanza.Pipeline(lang='en', processors='tokenize')
         # doc = nlp(texts)
         # sentences = doc.sentences
