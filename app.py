@@ -15,9 +15,44 @@ import matplotlib.colors
 import transformers
 from nltk.tokenize import sent_tokenize
 
-def get_sentence_embeddings(sentence, size=384):
-    # Placeholder implementation, replace with your sentence embedding method
-    return np.random.rand(1, size)
+from sentence_transformers import SentenceTransformer
+
+def highlight_embedding_sentences(text, model):
+    # return text
+    paragraphs = [p for p in text.split('\n') if p]
+    sentences = sent_tokenize(text)
+
+    highlighted_html = []
+    sentence_embeddings = []
+    for paragraph in paragraphs:
+        sentences = sent_tokenize(paragraph)
+        for sentence in sentences:
+            # Extract the embedding
+            sentence_embedding = model.encode(sentence)
+            sentence_embeddings.append(sentence_embedding)
+    minval = min([sentence_embedding.min() for sentence_embedding in sentence_embeddings])
+    maxval = max([sentence_embedding.max() for sentence_embedding in sentence_embeddings])
+    
+    sentence_embeddings = [sentence_embedding-minval for sentence_embedding in sentence_embeddings]
+    sentence_embeddings = [sentence_embedding/maxval for sentence_embedding in sentence_embeddings]
+
+    empty = f'#{int(255):02x}{int(255):02x}{int(255):02x}'
+    for paragraph in paragraphs:
+        sentences = sent_tokenize(paragraph)
+        for sentence in sentences:
+            characters = re.findall(r'(?s)(.)', sentence)
+            sentence_embedding_resized = np.resize(sentence_embedding, len(characters))
+
+            # characters = "".join([token.text for token in sentence.tokens])
+            for idx, character in enumerate(characters):
+                color = plt.cm.PiYG(sentence_embedding_resized[idx])
+                color = f'#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}'
+                highlighted_html.append(f'<mark style="background-color: {color}">{character}</mark>')
+            highlighted_html.append(f'<mark style="background-color: {empty}">{" "}</mark>')
+        highlighted_html.append(f'<br>')
+        highlighted_html.append(f'<br>')
+    return "".join(highlighted_html)
+
 
 def highlight_uniform_sentences(text, model):
     # return text
@@ -94,11 +129,12 @@ class TextVisualizationServeGradio(ServeGradio):
 
     def build_model(self):
         self.ready = True
-        model = transformers.AutoTokenizer.from_pretrained('bert-base-cased')
+        # Load the SBERT model
+        model = SentenceTransformer('bert-base-nli-mean-tokens')
         return model
 
     def predict(self, text):
-        return highlight_uniform_sentences(text=text, model=self._model)
+        return highlight_embedding_sentences(text=text, model=self._model)
         
     
 class LitRootFlow(L.LightningFlow):
