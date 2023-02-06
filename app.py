@@ -16,33 +16,36 @@ from lightning.app.components.serve import ServeGradio
 import markdown
 import re
 import random
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors
+import transformers
 import colorsys
 
+def get_sentence_embeddings(sentence, size=384):
+    # Placeholder implementation, replace with your sentence embedding method
+    return np.random.rand(1, size)
 
-def highlight_characters(text):
-    # First, convert the markdown text to HTML
-    html = markdown.markdown(text)
+def highlight_sentences(text, model):
+    # return text
 
-    # Replace the `p` tags with newline characters
-    html = html.replace("<p>", "").replace("</p>", "\n")
-
-    # Next, find all the characters (including newline characters) in the HTML
-    characters = re.findall(r'(?s)(.)', html)
-
-    # Then, generate a random color for each character
+    paragraphs = text.splitlines(True)
     highlighted_html = []
-    for character in characters:
-        if character == '\n':
-            highlighted_html.append(character)
-            continue
-        hue = random.uniform(0, 1)
-        saturation = random.uniform(0.0, 0.5)
-        value = random.uniform(0.5, 1)
-        color = colorsys.hsv_to_rgb(hue, saturation, value)
-        color = f'#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}'
-        highlighted_html.append(f'<mark style="background-color: {color}">{character}</mark>')
-
-
+    for paragraph in paragraphs:
+        sentences = paragraph.split(".")
+        for sentence in sentences:
+            characters = re.findall(r'(?s)(.)', sentence)
+            for character in characters:
+                if character == '\n':
+                    highlighted_html.append(character)
+                    continue
+                hue = random.uniform(0, 1)
+                saturation = random.uniform(0.0, 0.5)
+                value = random.uniform(0.5, 1)
+                color = colorsys.hsv_to_rgb(hue, saturation, value)
+                color = f'#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}'
+                highlighted_html.append(
+                    f'<mark style="background-color: {color}">{character}</mark>')
     # Finally, join the span tags together into a single string
     return "".join(highlighted_html)
 
@@ -58,22 +61,16 @@ class TextVisualizationServeGradio(ServeGradio):
     )
     outputs = []
     outputs.append(
-        # gr.Textbox(
-        #     elem_id="otext",
-        #     lines=15,
-        #     label=f"Highlight",
-        #     placeholder=f"Result is displayed here"
-        # )
         gr.Markdown(
             elem_id="otext",
             label=f"Highlight",
         )
     )
-    with open("data/Harry_Potter_Corpora/HarryJamesPotter.txt", "r", encoding="utf8") as f:
-        HarryJamesPotter = f.read()
+    with open("data/Lorem/sent.txt", "r", encoding="utf8") as f:
+        text = f.read()
 
     examples = [
-        HarryJamesPotter, 
+        text, 
     ]
     
     def __init__(self, cloud_compute, *args, **kwargs):
@@ -106,10 +103,11 @@ class TextVisualizationServeGradio(ServeGradio):
 
     def build_model(self):
         self.ready = True
-        pass
+        model = transformers.AutoTokenizer.from_pretrained('bert-base-cased')
+        return model
 
     def predict(self, text):
-        return highlight_characters(text=text)
+        return highlight_sentences(text=text, model=self._model)
         # return html.escape(texts)
 
         # nlp = stanza.Pipeline(lang='en', processors='tokenize')
