@@ -13,6 +13,39 @@ logging.basicConfig(level=logging.INFO)
 from functools import partial
 from lightning.app.components.serve import ServeGradio
 
+import markdown
+import re
+import random
+import colorsys
+
+
+def highlight_characters(text):
+    # First, convert the markdown text to HTML
+    html = markdown.markdown(text)
+
+    # Replace the `p` tags with newline characters
+    html = html.replace("<p>", "").replace("</p>", "\n")
+
+    # Next, find all the characters (including newline characters) in the HTML
+    characters = re.findall(r'(?s)(.)', html)
+
+    # Then, generate a random color for each character
+    highlighted_html = []
+    for character in characters:
+        if character == '\n':
+            highlighted_html.append(character)
+            continue
+        hue = random.uniform(0, 1)
+        saturation = random.uniform(0.0, 0.5)
+        value = random.uniform(0.5, 1)
+        color = colorsys.hsv_to_rgb(hue, saturation, value)
+        color = f'#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}'
+        highlighted_html.append(f'<mark style="background-color: {color}">{character}</mark>')
+
+
+    # Finally, join the span tags together into a single string
+    return "".join(highlighted_html)
+
 class TextVisualizationServeGradio(ServeGradio):
     inputs = []
     inputs.append(
@@ -75,8 +108,9 @@ class TextVisualizationServeGradio(ServeGradio):
         self.ready = True
         pass
 
-    def predict(self, texts):
-        return html.escape(texts)
+    def predict(self, text):
+        return highlight_characters(text=text)
+        # return html.escape(texts)
 
         # nlp = stanza.Pipeline(lang='en', processors='tokenize')
         # doc = nlp(texts)
