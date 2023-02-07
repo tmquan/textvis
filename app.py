@@ -24,28 +24,38 @@ def highlight_embedding_sentences(text, model):
 
     highlighted_html = []
     sentence_embeddings = []
-    for paragraph in paragraphs:
+    for _, paragraph in enumerate(paragraphs):
         sentences = sent_tokenize(paragraph)
-        for sentence in sentences:
+        for _, sentence in enumerate(sentences):
             # Extract the embedding
             sentence_embedding = model.encode(sentence)
             sentence_embeddings.append(sentence_embedding)
-    minval = min([sentence_embedding.min() for sentence_embedding in sentence_embeddings])
-    maxval = max([sentence_embedding.max() for sentence_embedding in sentence_embeddings])
     
-    sentence_embeddings = [sentence_embedding-minval for sentence_embedding in sentence_embeddings]
-    sentence_embeddings = [sentence_embedding/maxval for sentence_embedding in sentence_embeddings]
-
+    sentence_embeddings = np.array(sentence_embeddings)
+    sentence_embeddings -= sentence_embeddings.min()
+    sentence_embeddings /= sentence_embeddings.max()
+    # minval = min([sentence_embedding.min() for sentence_embedding in sentence_embeddings])
+    # maxval = max([sentence_embedding.max() for sentence_embedding in sentence_embeddings])
+    # sentence_embeddings = [sentence_embedding-minval for sentence_embedding in sentence_embeddings]
+    # sentence_embeddings = [sentence_embedding/maxval for sentence_embedding in sentence_embeddings]
+    # sentence_embeddings = [np.exp(sentence_embedding) for sentence_embedding in sentence_embeddings]
+    # minval = min([sentence_embedding.min() for sentence_embedding in sentence_embeddings])
+    # maxval = max([sentence_embedding.max() for sentence_embedding in sentence_embeddings])
+    # sentence_embeddings = [sentence_embedding-minval for sentence_embedding in sentence_embeddings]
+    # sentence_embeddings = [sentence_embedding/maxval for sentence_embedding in sentence_embeddings]
+    
     empty = f'#{int(255):02x}{int(255):02x}{int(255):02x}'
-    for paragraph in paragraphs:
+    for _, paragraph in enumerate(paragraphs):
         sentences = sent_tokenize(paragraph)
-        for sentence in sentences:
+        for s, sentence in enumerate(sentences):
             characters = re.findall(r'(?s)(.)', sentence)
+            sentence_embedding = sentence_embeddings[s]
+            sentence_embedding = np.resize(sentence_embeddings[s], 32)
             sentence_embedding_resized = np.resize(sentence_embedding, len(characters))
 
             # characters = "".join([token.text for token in sentence.tokens])
             for idx, character in enumerate(characters):
-                color = plt.cm.PiYG(sentence_embedding_resized[idx])
+                color = plt.cm.jet(sentence_embedding_resized[idx])
                 color = f'#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}'
                 highlighted_html.append(f'<mark style="background-color: {color}">{character}</mark>')
             highlighted_html.append(f'<mark style="background-color: {empty}">{" "}</mark>')
